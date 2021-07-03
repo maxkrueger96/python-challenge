@@ -2,13 +2,13 @@ import csv
 import os
 
 # load in the data
-csvfile = open('/Users/maxkrueger/Documents/NUBootcamp/python-challenge/PyBank/Resources/budget_data.csv','r')
-reader = csv.reader(csvfile)
+with open('/Users/maxkrueger/Documents/NUBootcamp/python-challenge/PyBank/Resources/budget_data.csv','r') as csvfile:
+    reader = csv.reader(csvfile)
 
-#make into list, delete header
-readerlist = list(reader)
-header = readerlist.pop(0)
-entrynum = len(readerlist)
+    #make into list, delete header
+    readerlist = list(reader)
+    header = readerlist.pop(0)
+    entrynum = len(readerlist)
 
 #split the data into two lists
 months = []
@@ -90,14 +90,37 @@ def border(text):
 #print analysis
 print(border(analysis))
 
-#append to txt file
-txt = open('/Users/maxkrueger/Documents/NUBootcamp/python-challenge/PyBank/Analysis/Analysis.txt','a')
-filesize = os.path.getsize('/Users/maxkrueger/Documents/NUBootcamp/python-challenge/PyBank/Analysis/Analysis.txt')
-if filesize == 0:
-    txt.write(border(analysis)) and txt.close()
-    print('File Written')
-else:
-    print('File Already Written')
+#write text file
+txt = '/Users/maxkrueger/Documents/NUBootcamp/python-challenge/PyBank/Analysis/Analysis.txt'
 
+#a little extra program in case edits are needed
+def filesize(p):
+    return os.path.getsize(p)
 
-    
+def checkwritefile(f):
+    of = open(f,"r+")
+    if filesize(f) == 0:
+        of.write(border(analysis))
+        of.close()
+        print('File Written')
+    else:
+        while True:
+            dirs = of.name.split("/")
+            ind = len(dirs)-1
+            fname = dirs[ind]
+            update = input("Would you like to update "+fname+"? (y/n): ")
+            update
+            if update.lower() == 'yes' or update.lower() == 'y':
+                of.truncate(0)
+                of.write(border(analysis))
+                of.close()
+                print("File Updated")
+                break
+            elif update.lower() == "no" or update.lower() == "n":
+                of.close()
+                print("File Closed")
+                break
+            else:
+                print("Invalid Response")
+
+checkwritefile(txt)
