@@ -1,75 +1,84 @@
 import csv
 import os
 
-# load in the data
-with open('/Users/maxkrueger/Documents/NUBootcamp/python-challenge/PyBank/Resources/budget_data.csv','r') as csvfile:
-    reader = csv.reader(csvfile)
+#Function opens the data file, writes it to a generator, and closes the file
+def loadgen():
+    datapath = '/Users/maxkrueger/Documents/NUBootcamp/03-Python/Homework/due_July14/Instructions/PyBank/Resources/budget_data.csv'
+    with open(datapath) as datafile:
+        reader = csv.reader(datafile)
+        next(reader)
+        for rows in reader:
+            yield rows
 
-    #make into list, delete header
-    readerlist = list(reader)
-    header = readerlist.pop(0)
-    entrynum = len(readerlist)
+#Function returns the number of months
+def entrycount():
+    gen = loadgen()
+    entrycount = sum((1 for x in gen))
+    return entrycount
 
-#split the data into two lists
-months = []
-profits = []
-
-for i in range(entrynum):
-    month = readerlist[i][0]
-    profit = int(readerlist[i][1])
-    
-    months.append(month)
-    profits.append(profit)
-
-#number of months
-monthnum = len(months)
+#fnc will split the data generator into two generator
+# returns either money or profits
+def split_rows(generator,index):
+    format_elems = lambda x: x.replace(' ','').replace('\'','')[1:-1].split(',') #Removes brackets and quotes from the rows, leaving the data
+    l = [format_elems(str(rows)) for rows in generator]
+    months = list(zip(*l))[0]
+    profits = list(map(lambda x: int(x),list((zip(*l)))[1]))
+    if index == "m":
+        return months
+    else:
+        return profits
 
 #net profits
-netprof = sum(profits)
+def netprof():
+    np = sum(split_rows(loadgen(),'p'))
+    return np
 
 #ch-ch-ch-ch-changes
-changes = []
+def changes():
+    deltalist = (split_rows(loadgen(),'p')[i+1]-split_rows(loadgen(),'p')[i] for i in range(entrycount()-1))
+    return deltalist
 
-for i in range(entrynum-1):
-    change = profits[i+1] - profits[i]
-
-    changes.append(change)
-
-#find average change
-floatavg = sum(changes) / len(changes)
-
-#format negative values correctly
+# #format negative values correctly
 def dollarform(amount):
     if amount >= 0:
         return "${:,.2f}".format(amount)
     else:
         return "-${:,.2f}".format(-amount)
 
-#convert float to dollar
-avgchange = dollarform(floatavg)
+#find average change
+def floatavg():
+    netchange = sum(changes())
+    total = sum((1 for x in changes()))
+    avg = netchange / total
+    return dollarform(avg)
 
 #find greatest increase
-intinc = max(changes)
-maxinc = dollarform(intinc)
+def maxinc():
+    intinc = max(changes())
+    dollarinc = dollarform(intinc)
+    return dollarinc
 
 #find greatest decrease
-intdec = min(changes)
-maxdec = dollarform(intdec)
+def maxdec():
+    intdec = min(changes())
+    dollardec = dollarform(intdec)
+    return dollardec
 
 #find corresponding months
-incindex = changes.index(intinc)
-decindex = changes.index(intdec)
-incmonth = months[incindex+1]
-decmonth = months[decindex+1]
+def findmonth(extremum):
+    l = list(changes())
+    j = l.index(extremum(changes()))
+    month = split_rows(loadgen(),'m')[j+1]
+    return month
 
 #print analysis
 analysis = '\nFinancial Analysis\n' + \
 '$' + '-'*50 + '$' + \
-'\nTotal Months: ' + str(monthnum) + \
-'\nNet Total Profits: ' + str(netprof) + \
-'\nAverage Change Between Months: ' + str(avgchange) + \
-'\nGreatest Increase in Profits: ' + incmonth + ' (' + str(maxinc) + ') ' + \
-'\nGreatest Decrease in Profits: ' + decmonth + ' (' + str(maxdec) + ')' + \
+'\nTotal Months: ' + str(entrycount()) + \
+'\nNet Total Profits: ' + str(netprof()) + \
+'\nAverage Change Between Months: ' + str(floatavg()) + \
+'\nGreatest Increase in Profits: ' + findmonth(max) + ' (' + str(maxinc()) + ') ' + \
+'\nGreatest Decrease in Profits: ' + findmonth(min) + ' (' + str(maxdec()) + ')' + \
 '\n '
 
 #let's make it cool
