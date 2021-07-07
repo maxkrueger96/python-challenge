@@ -4,73 +4,81 @@ from decimal import *
 import gc
 import os
 
-with open('/Users/maxkrueger/Documents/NUBootcamp/python-challenge/PyPoll/Resources/election_data.csv','r') as csvfile:
-    reader = csv.reader(csvfile)
-    next(reader)
+#fnc to loads data into generator as needed
+#we really don't need to carry around the data for the counties
+#converts csv reader to generator of tuples
+def loadgen():
+    datapath = '/Users/maxkrueger/Documents/NUBootcamp/python-challenge/PyPoll/Resources/election_data.csv'
+    with open(datapath) as datafile:
+        reader = csv.reader(datafile)
+        next(reader)
+        for rows in reader:
+            yield (rows[0], rows[2])                                 
 
-#we can do without the county values for this specific analysis
-    readerlist = [(rows[0],rows[2]) for rows in reader]
-
-#total # of votes
+#fnc totals # of votes
 def votetotal():
-    return len(readerlist)
+    counter = (1 for x in loadgen())
+    return sum(counter)
 
 #the set of candidates
 def candis():
-    candilist = list({readerlist[i][1] for i in range(votetotal())})
+    toset = {rows[1] for rows in loadgen()}
+    candilist = list(toset)
     return candilist
 
-def idlist(candidate):
-    lst = [readerlist[i][0] for i in range(votetotal()) if readerlist[i][1]==candidate]
-    return lst
+#fnc to filter ids by candidate
+def quickid(candidate):
+    condition = lambda element: candidate in element
+    return condition
 
-#vote totals for each candidate
-def lenlist(candidate):
-    return len(idlist(candidate))
+#runs said filter
+def idfilter(candidate):
+    idfilter = filter(quickid(candidate),loadgen())
+    return idfilter
 
+#count votes in the filtered generator
+def indivotes(candidate):
+    filter = idfilter(candidate)
+    counter = (1 for x in filter)
+    return sum(counter)
+
+#sort candidates numerically by total vote count
 def sortcandis():
-    sorting = sorted(candis(),key=lenlist, reverse=True)
+    sorting = sorted(candis(), key = indivotes, reverse=True)
     return sorting
 
 #total percentage of the vote per candidate
+#returns percentage as string
 def votepercent(candidate):
-    q = lenlist(candidate) / float(votetotal())
+    q = indivotes(candidate) / float(votetotal())
     p = round(q*100)
-    return p
-
-def sortperc(numstr):
-    perc = [votepercent(x) for x in candis()]
-    sort = sorted(perc, reverse=True)
-    if numstr == str:
-        return ["{:.2f}%".format(x) for x in sort]
-    elif numstr == decimal:
-        return sort
-
+    return "{:.2f}%".format(p)
+    
 #determine the winner
 def winner():
-    winperc = max(sortperc(decimal))
-    i = sortperc(decimal).index(winperc)
-    return "Winner: " + sortcandis()[i]
+    return sortcandis()[0]
 
-#print analysis
-def stars(n):
-    return "*"*n
-
-#totally unnecessary but fun to write
+#fnc to return the breakdown of individual candidate performance
 def breakdown():
-    candiperc = {sortcandis()[n]:"{:.2f}%".format(votepercent(sortcandis()[n])) for n in range(4)}
-    mapcp = map(": ".join,candiperc.items())
-    quickslice = lambda x: int(x.split(": ")[1].split(".")[0])
-    sortmap = sorted(mapcp,key=quickslice,reverse=True)
-    addlist = {sortmap[n]:"({})".format(str(lenlist(sortcandis()[n]))) for n in range(4)}
-    finalmap = map(" ".join,addlist.items())
-    scndslice = lambda x: int(x.split(": ")[1].split(".")[0])
-    breakdown = sorted(finalmap,key=scndslice,reverse=True)
-    return '''\n'''.join(breakdown)
+    candiperc = (f"{x}: {votepercent(x)} ({str(indivotes(x))})" for x in sortcandis())
+    joinedlist = '''\n'''.join(candiperc)
+    return joinedlist
 
+#fnc to return final analysis
 def analysis():
-    return stars(25)+'''\nElection Results\n'''+stars(25)+ '''\nTotal Votes: '''+str(votetotal())+ '''\n'''+stars(25)+'''\n'''+breakdown()+'''\n'''+stars(25)+ '''\n'''+winner()+'''\n'''+stars(25)+'''\n'''
+    return \
+    '*'*25 + \
+    '''\nElection Results\n''' + \
+    '*'*25 + \
+    '''\nTotal Votes: ''' + str(votetotal()) + \
+    '''\n''' + '*'*25 + \
+    '''\n''' + breakdown() + \
+    '''\n''' + '*'*25 + \
+    '''\n''' + winner() + \
+    '''\n''' + '*'*25 + \
+    '''\n'''
 
+#fnc adds a fun border with dynamic sizing around text
 def border(text):
     lines = text.splitlines()
     width = max(len(s) for s in lines)
@@ -79,15 +87,13 @@ def border(text):
     for i in range(len(lines)):
         cenline = lines[i].center(width)
         newlines.append(cenline)
-    res = ['• ' + ' • '*topbott + ' •']
+    res = ['* ' + ' * '*topbott + ' *']
     for s in newlines:
-        res.append('•    ' + s + '   •')
-    res.append('• ' + ' • '*topbott + ' •')
+        res.append('*    ' + s + '   *')
+    res.append('* ' + ' * '*topbott + ' *')
     return '\n'.join(res)
 
-gc.disable()
-analysis = border(analysis())
-print(analysis)
+print(border(analysis()))
 
 #write to txt file
 txt = '/Users/maxkrueger/Documents/NUBootcamp/python-challenge/PyPoll/Analysis/Analysis.txt'
@@ -97,7 +103,7 @@ def filesize(p):
 def checkwritefile(f):
     of = open(f,"r+")
     if filesize(f) == 0:
-        of.write(analysis)
+        of.write(border(analysis()))
         of.close()
         print('File Written')
     else:
@@ -109,7 +115,7 @@ def checkwritefile(f):
             update
             if update.lower() == 'yes' or update.lower() == 'y':
                 of.truncate(0)
-                of.write(border(analysis))
+                of.write(border(analysis()))
                 of.close()
                 print("File Updated")
                 break

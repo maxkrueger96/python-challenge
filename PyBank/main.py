@@ -99,12 +99,15 @@ def border(text):
 #print analysis
 print(border(analysis))
 
-#write text file
+#now to export the analysis
 txt = '/Users/maxkrueger/Documents/NUBootcamp/python-challenge/PyBank/Analysis/Analysis.txt'
 
-#a little extra program in case edits are needed
+#need the filesize for writing fnc
 def filesize(p):
     return os.path.getsize(p)
+
+#this function checks if the existing file is empty, fills it if it is
+#if the file is written already, this fnc prompts the user to say whether they'd like to update the exisitng txt anyway
 
 def checkwritefile(f):
     of = open(f,"r+")
