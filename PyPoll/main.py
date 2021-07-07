@@ -56,7 +56,7 @@ def votepercent(candidate):
     
 #determine the winner
 def winner():
-    return sortcandis()[0]
+    return 'The Winner Is: ' + sortcandis()[0]
 
 #fnc to return the breakdown of individual candidate performance
 def breakdown():
